@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <title>汉山美食城消费抽奖活动</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px 10px;
+            color: #333;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 10px;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+            margin: -20px -20px 20px;
+            border-radius: 25px 25px 0 0;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
+            background-size: 100% 100%;
+        }
+        
+        h1 {
+            font-size: clamp(1.8rem, 5vw, 2.8rem);
+            margin-bottom: 8px;
+            font-weight: 800;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .subtitle {
+            font-size: clamp(0.9rem, 3vw, 1.3rem);
+            opacity: 0.9;
+            position: relative;
+            z-index: 2;
+            margin-top: 5px;
+            padding: 0 10px;
+        }
+        
+        .content-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            width: 100%;
+        }
+        
+        .wheel-section, .stats-section {
+            flex: 1;
+            min-width: 280px;
+            width: 100%;
+        }
+        
+        .wheel-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 10px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        
+        .wheel-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            aspect-ratio: 1/1;
+            margin: 10px auto;
+            padding: 0 10px;
+        }
+        
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            border: clamp(8px, 2vw, 10px) solid #ff6b6b;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.2);
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+            background: conic-gradient(
+                #ff6b6b 0 72deg,
+                #ff9a9e 72deg 144deg,
+                #43e97b 144deg 216deg,
+                #4facfe 216deg 288deg,
+                #a6c0fe 288deg 360deg
+            );
+        }
+        
+        .wheel-item {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 50%;
+            transform-origin: 0% 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .wheel-content {
+            transform: rotate(45deg);
+            text-align: center;
+            width: clamp(80px, 20vw, 120px);
+            margin-left: clamp(-30px, -5vw, -40px);
+            margin-top: clamp(20px, 5vw, 30px);
+        }
+        
+        .wheel-emoji {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            margin-bottom: 8px;
+        }
+        
+        .wheel-text {
+            font-weight: bold;
+            font-size: clamp(0.8rem, 2vw, 1.1rem);
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: clamp(30px, 8vw, 40px);
+            height: clamp(45px, 12vw, 60px);
+            z-index: 10;
+        }
+        
+        .pointer::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: clamp(15px, 4vw, 20px) solid transparent;
+            border-right: clamp(15px, 4vw, 20px) solid transparent;
+            border-bottom: clamp(35px, 10vw, 50px) solid #ff6b6b;
+        }
+        
+        .pointer::after {
+            content: "";
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: clamp(15px, 4vw, 20px);
+            height: clamp(15px, 4vw, 20px);
+            background: #ff6b6b;
+            border-radius: 50%;
+            z-index: 11;
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.8);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 15px;
+            width: 100%;
+            padding: 0 10px;
+        }
+        
+        .draw-btn {
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+            color: white;
+            border: none;
+            padding: clamp(12px, 4vw, 16px) clamp(30px, 10vw, 50px);
+            font-size: clamp(1.2rem, 4vw, 1.6rem);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.5);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        
+        .draw-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 30px rgba(255, 107, 107, 0.7);
+        }
+        
+        .draw-btn:active {
+            transform: translateY(0);
+        }
+        
+        .draw-btn.disabled {
+            background: linear-gradient(90deg, #bdc3c7, #95a5a6);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .device-info {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 12px 10px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            margin-top: 10px;
+            border: 2px dashed #ff6b6b;
+        }
+        
+        .device-status {
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 5px;
+            font-size: clamp(0.9rem, 3vw, 1rem);
+        }
+        
+        .status-available {
+            background: #43e97b;
+            color: white;
+        }
+        
+        .status-used {
+            background: #ff6b6b;
+            color: white;
+        }
+        
+        .probability-info {
+            background: #f0f8ff;
+            border-radius: 15px;
+            padding: 15px 10px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .probability-title {
+            text-align: center;
+            color: #ff6b6b;
+            font-size: clamp(1.1rem, 3vw, 1.4rem);
+            margin-bottom: 15px;
+        }
+        
+        .prize-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .prize-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 8px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        
+        .prize-emoji {
+            font-size: clamp(1.2rem, 4vw, 1.8rem);
+            width: clamp(40px, 10vw, 50px);
+            text-align: center;
+        }
+        
+        .prize-details {
+            flex: 1;
+            padding: 0 5px;
+        }
+        
+        .prize-name {
+            font-weight: bold;
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+        }
+        
+        .prize-prob {
+            color: #666;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+        
+        .prize-weight {
+            font-weight: bold;
+            color: #ff6b6b;
+            font-size: clamp(0.8rem, 2vw, 1rem);
+            white-space: nowrap;
+        }
+        
+        .probability-bar {
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            margin: 20px 0;
+            overflow: hidden;
+            position: relative;
+            width: 100%;
+        }
+        
+        .bar-section {
+            height: 100%;
+            display: inline-block;
+            position: absolute;
+            top: 0;
+        }
+        
+        .bar-0 { background: #ff6b6b; left: 0; width: 1%; }
+        .bar-1 { background: #ff9a9e; left: 1%; width: 4%; }
+        .bar-2 { background: #43e97b; left: 5%; width: 10%; }
+        .bar-3 { background: #4facfe; left: 15%; width: 15%; }
+        .bar-4 { background: #a6c0fe; left: 30%; width: 70%; }
+        
+        .bar-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: clamp(0.7rem, 2vw, 0.8rem);
+            color: #666;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .bar-label {
+            width: 18%;
+            text-align: center;
+            white-space: nowrap;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px 10px;
+            margin: 20px -20px -20px;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e53);
+            color: white;
+            border-radius: 0 0 25px 25px;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+        
+        .legal {
+            font-size: clamp(0.7rem, 2vw, 0.85rem);
+            opacity: 0.9;
+            margin-top: 8px;
+            padding: 0 10px;
+            line-height: 1.4;
+        }
+        
+        .winner-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+            padding: 20px 10px;
+            touch-action: none;
+        }
+        
+        .winner-content {
+            background: white;
+            border-radius: 20px;
+            padding: clamp(20px, 8vw, 30px);
+            text-align: center;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
+            transform: scale(0.8);
+            transition: transform 0.5s;
+        }
+        
+        .winner-popup.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .winner-popup.show .winner-content {
+            transform: scale(1);
+        }
+        
+        .winner-emoji {
+            font-size: clamp(2.5rem, 10vw, 4rem);
+            margin-bottom: 15px;
+            animation: bounce 1s infinite alternate;
+        }
+        
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-15px); }
+        }
+        
+        .winner-title {
+            font-size: clamp(1.5rem, 6vw, 2.2rem);
+            margin-bottom: 15px;
+            color: #ff6b6b;
+        }
+        
+        .winner-name {
+            font-size: clamp(1.5rem, 7vw, 2.2rem);
+            font-weight: bold;
+            margin-bottom: clamp(20px, 8vw, 25px);
+            padding: 10px 20px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+        
+        .close-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: clamp(10px, 4vw, 12px) clamp(20px, 8vw, 30px);
+            font-size: clamp(0.9rem, 3vw, 1.1rem);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background 0.3s;
+            min-width: 120px;
+            touch-action: manipulation;
+        }
+        
+        .close-btn:hover {
+            background: #ff5252;
+        }
+        
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: clamp(40px, 10vw, 60px);
+            height: clamp(40px, 10vw, 60px);
+            background: white;
+            border-radius: 50%;
+            z-index: 5;
+            border: clamp(4px, 1vw, 6px) solid #ff6b6b;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: #ff6b6b;
+        }
+        
+        .stats-container {
+            background: white;
+            border-radius: 20px;
+            padding: clamp(15px, 5vw, 20px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        
+        .stats-title {
+            font-size: clamp(1.2rem, 4vw, 1.5rem);
+            color: #ff6b6b;
+            text-align: center;
+            margin-bottom: clamp(15px, 5vw, 20px);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(clamp(80px, 20vw, 120px), 1fr));
+            gap: clamp(10px, 3vw, 15px);
+            margin-bottom: clamp(15px, 5vw, 20px);
+            width: 100%;
+        }
+        
+        .stat-card {
+            background: #f9f9f9;
+            border-radius: 15px;
+            padding: clamp(10px, 3vw, 15px);
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        
+        .stat-value {
+            font-size: clamp(1.5rem, 5vw, 2rem);
+            font-weight: bold;
+            color: #ff6b6b;
+            margin-bottom: 5px;
+            line-height: 1.2;
+        }
+        
+        .stat-name {
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            color: #666;
+            white-space: nowrap;
+        }
+        
+        .stat-card-0 .stat-value { color: #ff6b6b; }
+        .stat-card-1 .stat-value { color: #ff9a9e; }
+        .stat-card-2 .stat-value { color: #43e97b; }
+        .stat-card-3 .stat-value { color: #4facfe; }
+        .stat-card-4 .stat-value { color: #a6c0fe; }
+        
+        .history-container {
+            background: white;
+            border-radius: 15px;
+            padding: clamp(15px, 5vw, 20px);
+            margin-top: clamp(15px, 5vw, 20px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            width: 100%;
+        }
+        
+        .history-title {
+            font-size: clamp(1.1rem, 3vw, 1.3rem);
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            text-align: center;
+        }
+        
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 8px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            width: 100%;
+        }
+        
+        .history-time {
+            min-width: clamp(70px, 20vw, 100px);
+            color: #666;
+            padding-right: 10px;
+            text-align: center;
+        }
+        
+        .history-prize {
+            flex: 1;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .history-emoji {
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            width: clamp(30px, 8vw, 40px);
+            text-align: center;
+        }
+        
+        .data-export {
+            display: flex;
+            justify-content: center;
+            margin-top: clamp(15px, 5vw, 20px);
+            gap: 15px;
+            padding: 0 10px;
+            width: 100%;
+        }
+        
+        .export-btn {
+            background: linear-gradient(90deg, #43e97b, #38f9d7);
+            color: white;
+            border: none;
+            padding: clamp(10px, 3vw, 12px) clamp(15px, 5vw, 20px);
+            font-size: clamp(0.9rem, 3vw, 1rem);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            min-width: 180px;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        
+        .export-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(67, 233, 123, 0.4);
+        }
+
+        @media (max-width: 375px) {
+            .container {
+                padding: 15px;
+                margin: 10px 0;
+            }
+            header {
+                margin: -15px -15px 15px;
+                padding: 15px 5px;
+            }
+            footer {
+                margin: 15px -15px -15px;
+                padding: 15px 5px;
+            }
+            .bar-label {
+                width: 30%;
+            }
+            .history-item {
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-gift"></i> 汉山美食城消费抽奖活动</h1>
+            <div class="subtitle">每台设备每日仅限抽奖一次 | 消费满100元即可参与</div>
+        </header>
+        
+        <div class="content-wrapper">
+            <div class="wheel-section">
+                <div class="wheel-container">
+                    <div class="wheel-wrapper">
+                        <div class="wheel" id="wheel">
+                            <div class="wheel-item" style="transform: rotate(0deg);">
+                                <div class="wheel-content">
+                                    <div class="wheel-emoji">🏆</div>
+                                    <div class="wheel-text">免单券</div>
+                                </div>
+                            </div>
+                            <div class="wheel-item" style="transform: rotate(72deg);">
+                                <div class="wheel-content">
+                                    <div class="wheel-emoji">💰</div>
+                                    <div class="wheel-text">半折券</div>
+                                </div>
+                            </div>
+                            <div class="wheel-item" style="transform: rotate(144deg);">
+                                <div class="wheel-content">
+                                    <div class="wheel-emoji">🎯</div>
+                                    <div class="wheel-text">七折券</div>
+                                </div>
+                            </div>
+                            <div class="wheel-item" style="transform: rotate(216deg);">
+                                <div class="wheel-content">
+                                    <div class="wheel-emoji">🎁</div>
+                                    <div class="wheel-text">八折券</div>
+                                </div>
+                            </div>
+                            <div class="wheel-item" style="transform: rotate(288deg);">
+                                <div class="wheel-content">
+                                    <div class="wheel-emoji">🎫</div>
+                                    <div class="wheel-text">九折券</div>
+                                </div>
+                            </div>
+                            <div class="wheel-center">
+                                <i class="fas fa-redo"></i>
+                            </div>
+                        </div>
+                        <div class="pointer"></div>
+                    </div>
+                    
+                    <div class="controls">
+                        <button class="draw-btn" id="spin-btn">
+                            <i class="fas fa-redo"></i> 转动转盘
+                        </button>
+                        
+                        <div class="device-info">
+                            <div>抽奖状态：</div>
+                            <div class="device-status status-available" id="device-status">可参与今日抽奖</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="probability-info">
+                    <div class="probability-title">奖品概率分布（基于权重）</div>
+                    
+                    <div class="probability-bar">
+                        <div class="bar-section bar-0"></div>
+                        <div class="bar-section bar-1"></div>
+                        <div class="bar-section bar-2"></div>
+                        <div class="bar-section bar-3"></div>
+                        <div class="bar-section bar-4"></div>
+                    </div>
+                    
+                    <div class="bar-labels">
+                        <div class="bar-label">🏆 1%</div>
+                        <div class="bar-label">💰 4%</div>
+                        <div class="bar-label">🎯 10%</div>
+                        <div class="bar-label">🎁 15%</div>
+                        <div class="bar-label">🎫 70%</div>
+                    </div>
+                    
+                    <div class="prize-list">
+                        <div class="prize-item">
+                            <div class="prize-emoji">🏆</div>
+                            <div class="prize-details">
+                                <div class="prize-name">免单券</div>
+                                <div class="prize-prob">权重: 1 | 概率: 1%</div>
+                            </div>
+                            <div class="prize-weight">稀有</div>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-emoji">💰</div>
+                            <div class="prize-details">
+                                <div class="prize-name">半折券</div>
+                                <div class="prize-prob">权重: 4 | 概率: 4%</div>
+                            </div>
+                            <div class="prize-weight">珍贵</div>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-emoji">🎯</div>
+                            <div class="prize-details">
+                                <div class="prize-name">七折券</div>
+                                <div class="prize-prob">权重: 10 | 概率: 10%</div>
+                            </div>
+                            <div class="prize-weight">高级</div>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-emoji">🎁</div>
+                            <div class="prize-details">
+                                <div class="prize-name">八折券</div>
+                                <div class="prize-prob">权重: 15 | 概率: 15%</div>
+                            </div>
+                            <div class="prize-weight">中等</div>
+                        </div>
+                        <div class="prize-item">
+                            <div class="prize-emoji">🎫</div>
+                            <div class="prize-details">
+                                <div class="prize-name">九折券</div>
+                                <div class="prize-prob">权重: 70 | 概率: 70%</div>
+                            </div>
+                            <div class="prize-weight">常见</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stats-section">
+                <div class="stats-container">
+                    <div class="stats-title">抽奖数据统计</div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card stat-card-0">
+                            <div class="stat-value" id="free-count">0</div>
+                            <div class="stat-name">免单券</div>
+                        </div>
+                        <div class="stat-card stat-card-1">
+                            <div class="stat-value" id="half-count">0</div>
+                            <div class="stat-name">半折券</div>
+                        </div>
+                        <div class="stat-card stat-card-2">
+                            <div class="stat-value" id="seven-count">0</div>
+                            <div class="stat-name">七折券</div>
+                        </div>
+                        <div class="stat-card stat-card-3">
+                            <div class="stat-value" id="eight-count">0</div>
+                            <div class="stat-name">八折券</div>
+                        </div>
+                        <div class="stat-card stat-card-4">
+                            <div class="stat-value" id="nine-count">0</div>
+                            <div class="stat-name">九折券</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-draws">0</div>
+                            <div class="stat-name">总抽奖次数</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="unique-vouchers">0</div>
+                            <div class="stat-name">参与设备数</div>
+                        </div>
+                    </div>
+                    
+                    <div class="history-container">
+                        <div class="history-title">最近抽奖记录</div>
+                        <div class="history-list" id="history-list">
+                            <div class="history-item">
+                                <div class="history-time">暂无记录</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="data-export">
+                        <button class="export-btn" id="export-excel">
+                            <i class="fas fa-file-excel"></i> 导出抽奖记录到Excel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>汉山美食城消费抽奖系统 | 技术支持：HTML5 + CSS3 + JavaScript</p>
+            <div class="legal">本活动最终解释权归汉山美食城所有 | 每台设备每日仅限参与一次 | 免单券概率1% | 半折券概率4% | 七折券概率10% | 八折券概率15% | 九折券概率70%</div>
+        </footer>
+    </div>
+    
+    <div class="winner-popup" id="winner-popup">
+        <div class="winner-content">
+            <div class="winner-emoji" id="winner-emoji">🎉</div>
+            <div class="winner-title">恭喜您抽中了</div>
+            <div class="winner-name" id="winner-name">九折券</div>
+            <button class="close-btn" id="close-popup">关闭</button>
+        </div>
+    </div>
+    
+    <script>
+        // 奖品配置
+        const prizes = [
+            { name: "免单券", weight: 1, emoji: "🏆", color: "#ff6b6b", id: "free" },
+            { name: "半折券", weight: 4, emoji: "💰", color: "#ff9a9e", id: "half" },
+            { name: "七折券", weight: 10, emoji: "🎯", color: "#43e97b", id: "seven" },
+            { name: "八折券", weight: 15, emoji: "🎁", color: "#4facfe", id: "eight" },
+            { name: "九折券", weight: 70, emoji: "🎫", color: "#a6c0fe", id: "nine" }
+        ];
+        
+        // 计算总权重
+        const totalWeight = prizes.reduce((sum, prize) => sum + prize.weight, 0);
+
+        // 获取今日日期（格式：YYYY-MM-DD），生成每日唯一key
+        function getTodayDate() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        const today = getTodayDate();
+        const DRAW_STATUS_KEY = `lottery_has_drawn_${today}`;
+        const DEVICE_LIST_KEY = 'lottery_participated_devices';
+
+        // 初始化数据
+        let stats = JSON.parse(localStorage.getItem('lotteryStats')) || {
+            total: 0,
+            free: 0,
+            half: 0,
+            seven: 0,
+            eight: 0,
+            nine: 0,
+            uniqueVouchers: 0
+        };
+        let history = JSON.parse(localStorage.getItem('lotteryHistory')) || [];
+        let hasDrawn = localStorage.getItem(DRAW_STATUS_KEY) === 'true';
+        let participatedDevices = JSON.parse(localStorage.getItem(DEVICE_LIST_KEY)) || [];
+        const deviceId = generateDeviceId();
+
+        // 生成设备唯一标识
+        function generateDeviceId() {
+            let id = localStorage.getItem('lottery_device_id');
+            if (!id) {
+                const browserInfo = navigator.userAgent + navigator.language;
+                const random = Math.random().toString(36).substring(2, 10);
+                const timestamp = new Date().getTime().toString(36);
+                id = btoa(browserInfo + random + timestamp).substring(0, 20);
+                localStorage.setItem('lottery_device_id', id);
+            }
+            return id;
+        }
+        
+        // DOM元素获取
+        const wheel = document.getElementById('wheel');
+        const spinBtn = document.getElementById('spin-btn');
+        const winnerPopup = document.getElementById('winner-popup');
+        const winnerName = document.getElementById('winner-name');
+        const winnerEmoji = document.getElementById('winner-emoji');
+        const closePopup = document.getElementById('close-popup');
+        const historyList = document.getElementById('history-list');
+        const deviceStatusElement = document.getElementById('device-status');
+        const uniqueVouchersElement = document.getElementById('unique-vouchers');
+
+        // 页面初始化
+        function initPage() {
+            updateStatsDisplay();
+            updateHistoryDisplay();
+            wheel.style.transform = 'rotate(0deg)';
+            if (hasDrawn) {
+                spinBtn.disabled = true;
+                spinBtn.classList.add('disabled');
+                spinBtn.innerHTML = '<i class="fas fa-check-circle"></i> 今日已抽奖';
+                deviceStatusElement.textContent = "今日已参与抽奖";
+                deviceStatusElement.className = "device-status status-used";
+            }
+        }
+
+        // 转盘抽奖逻辑
+        spinBtn.addEventListener('click', () => {
+            if (wheel.classList.contains('spinning') || hasDrawn) return;
+            hasDrawn = true;
+            localStorage.setItem(DRAW_STATUS_KEY, 'true');
+            spinBtn.disabled = true;
+            spinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 旋转中...';
+
+            const selectedPrize = drawLottery();
+            const baseDegrees = 1800;
+            const prizeIndex = prizes.findIndex(p => p.name === selectedPrize.name);
+            const sectionAngle = 72;
+            const offsetAngle = 360 - (prizeIndex * sectionAngle + sectionAngle/2);
+            const spinDegrees = baseDegrees + offsetAngle;
+
+            wheel.style.transform = `rotate(${spinDegrees}deg)`;
+            wheel.classList.add('spinning');
+            updateStats(selectedPrize);
+            addToHistory(selectedPrize);
+
+            setTimeout(() => {
+                spinBtn.innerHTML = '<i class="fas fa-check-circle"></i> 今日已抽奖';
+                spinBtn.classList.add('disabled');
+                wheel.classList.remove('spinning');
+                deviceStatusElement.textContent = "今日已参与抽奖";
+                deviceStatusElement.className = "device-status status-used";
+                showWinner(selectedPrize);
+            }, 3500);
+        });
+
+        // 权重随机抽奖
+        function drawLottery() {
+            let random = Math.random() * totalWeight;
+            for (const p of prizes) {
+                if (random < p.weight) return p;
+                random -= p.weight;
+            }
+            return prizes[prizes.length - 1];
+        }
+
+        // 显示中奖弹窗
+        function showWinner(prize) {
+            winnerName.textContent = prize.name;
+            winnerName.style.color = prize.color;
+            winnerName.style.backgroundColor = `${prize.color}20`;
+            winnerEmoji.textContent = prize.emoji;
+            winnerPopup.classList.add('show');
+        }
+
+        // 关闭弹窗
+        closePopup.addEventListener('click', () => {
+            winnerPopup.classList.remove('show');
+        });
+
+        // 更新统计数据
+        function updateStats(prize) {
+            stats.total++;
+            stats[prize.id]++;
+            if (!participatedDevices.includes(deviceId)) {
+                participatedDevices.push(deviceId);
+                localStorage.setItem(DEVICE_LIST_KEY, JSON.stringify(participatedDevices));
+            }
+            stats.uniqueVouchers = participatedDevices.length;
+            localStorage.setItem('lotteryStats', JSON.stringify(stats));
+            updateStatsDisplay();
+        }
+
+        // 更新统计展示
+        function updateStatsDisplay() {
+            document.getElementById('total-draws').textContent = stats.total;
+            document.getElementById('free-count').textContent = stats.free;
+            document.getElementById('half-count').textContent = stats.half;
+            document.getElementById('seven-count').textContent = stats.seven;
+            document.getElementById('eight-count').textContent = stats.eight;
+            document.getElementById('nine-count').textContent = stats.nine;
+            uniqueVouchersElement.textContent = stats.uniqueVouchers;
+        }
+
+        // 添加抽奖记录
+        function addToHistory(prize) {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('zh-CN');
+            const timeStr = now.toLocaleTimeString('zh-CN', {hour12: false});
+            history.unshift({date: dateStr, time: timeStr, prize: prize.name, emoji: prize.emoji});
+            if (history.length > 10) history.pop();
+            localStorage.setItem('lotteryHistory', JSON.stringify(history));
+            updateHistoryDisplay();
+        }
+
+        // 更新历史记录展示
+        function updateHistoryDisplay() {
+            historyList.innerHTML = '';
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="history-item"><div class="history-time">暂无记录</div></div>';
+                return;
+            }
+            history.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `
+                    <div class="history-time">${item.date}<br>${item.time}</div>
+                    <div class="history-emoji">${item.emoji}</div>
+                    <div class="history-prize">${item.prize}</div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        // Excel导出（密码验证：5975945）
+        document.getElementById('export-excel').addEventListener('click', () => {
+            if (history.length === 0) {
+                alert("暂无抽奖记录，无法导出！");
+                return;
+            }
+            const EXPORT_PASSWORD = '5975945';
+            const inputPwd = prompt('请输入导出密码：', '');
+            if (inputPwd === null) return;
+            if (inputPwd !== EXPORT_PASSWORD) {
+                alert('密码错误！无法导出抽奖记录');
+                return;
+            }
+
+            const excelData = history.map(item => ({
+                日期: item.date,
+                时间: item.time,
+                抽中奖品: item.prize,
+                奖品标识: item.emoji
+            }));
+            excelData.push({
+                日期: '【统计汇总】',
+                时间: `总抽奖次数: ${stats.total}`,
+                抽中奖品: `参与设备数: ${stats.uniqueVouchers}`,
+                奖品标识: ''
+            });
+            excelData.push({
+                日期: '奖品明细',
+                时间: `免单券: ${stats.free} | 半折券: ${stats.half}`,
+                抽中奖品: `七折券: ${stats.seven} | 八折券: ${stats.eight}`,
+                奖品标识: `九折券: ${stats.nine}`
+            });
+
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.json_to_sheet(excelData);
+            XLSX.utils.book_append_sheet(wb, ws, '汉山美食城抽奖记录');
+            const now = new Date();
+            const fileName = `汉山美食城抽奖记录_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,0)}${now.getDate().toString().padStart(2,0)}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+        });
+        
+        // 页面加载初始化
+        window.onload = initPage;
+    </script>
+</body>
+</html>
